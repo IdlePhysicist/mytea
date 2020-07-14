@@ -1,0 +1,72 @@
+version: "2.1"
+services:
+  gitea:
+    image: gitea/gitea:1.12
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - USER_UID=${GIT_USER_UID}
+      - USER_GID=${GIT_USER_GID}
+      - DB_TYPE=postgres
+      - DB_HOST=db:5432
+      - DB_NAME=gitea
+      - DB_USER=${PG_USER}
+      - DB_PASSWD=${PG_PASS}
+      - SSH_PORT=22
+      - SSH_LISTEN_PORT=22
+    restart: always
+    networks:
+      - default
+      - back
+    volumes:
+      - /var/lib/gitea:/data
+    expose:
+      - "3000"
+    ports: 
+      - "127.0.0.1:2222:22"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=default"
+      - "traefik.http.routers.gitea.rule=Host(`${FQDN}`)"
+      - "traefik.http.routers.gitea.entrypoints=websecure"
+      - "traefik.http.routers.gitea.tls.certresolver=myresolver"
+      - "traefik.http.services.gitea.loadbalancer.server.port=3000"
+
+  db:
+    image: postgres:9.6
+    restart: always
+    environment:
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PASS}
+      - POSTGRES_DB=gitea
+    networks:
+      - back
+    volumes:
+      - /opt/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: "exit 0"
+
+  traefik:
+    image: traefik:v2.2
+    restart: always
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=${CERT_EMAIL}"
+      - "--certificatesresolvers.myresolver.acme.storage=/etc/traefik/acme/acme.json"
+    ports:
+      - "8080:8080"
+      - "443:443"
+    networks:
+      - default
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./acme:/etc/traefik/acme
+
+networks:
+  back:
+    external: true
