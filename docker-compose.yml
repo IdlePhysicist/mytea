@@ -1,7 +1,7 @@
 version: "2.1"
 services:
   gitea:
-    image: gitea/gitea:1.12
+    image: gitea/gitea:1.12.3
     depends_on:
       db:
         condition: service_healthy
@@ -17,7 +17,7 @@ services:
       - SSH_LISTEN_PORT=22
     restart: always
     networks:
-      - default
+      - front
       - back
     volumes:
       - /var/lib/gitea:/data
@@ -27,7 +27,7 @@ services:
       - "127.0.0.1:2222:22"
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=default"
+      - "traefik.docker.network=front"
       - "traefik.http.routers.gitea.rule=Host(`${FQDN}`)"
       - "traefik.http.routers.gitea.entrypoints=websecure"
       - "traefik.http.routers.gitea.tls.certresolver=myresolver"
@@ -62,11 +62,13 @@ services:
       - "8080:8080"
       - "443:443"
     networks:
-      - default
+      - front
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./acme:/etc/traefik/acme
 
 networks:
   back:
+    external: true
+  front:
     external: true

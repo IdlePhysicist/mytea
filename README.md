@@ -33,10 +33,11 @@ chown root:git /etc/gitea
 chmod 770 /etc/gitea
 ```
 
-Clone the [mytea repo](https://code.speleo.dev/IdlePhysicist/mytea), create your own `env.sh` from the example provided. Then create a docker network for the backend database.
+Clone the [mytea repo](https://code.speleo.dev/IdlePhysicist/mytea), create your own `env.sh` from the example provided. Then create a docker network for the backend database, and one for the "frontend" network.
 
 ```
 docker network create --internal back
+docker network create front
 ```
 
 Now we can source the env.sh file, and fire up the docker-compose file. Assuming that your DNS records have populated you can navigate to your FQDN and complete the web based installation of Gitea.
